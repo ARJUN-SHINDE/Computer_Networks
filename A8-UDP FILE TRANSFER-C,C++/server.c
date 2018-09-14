@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <error.h>
+#include <string.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#define MYPORT 35552 /*well know port */
+#define BACKLOG 10 /* how many pending connection queue will hold */
+#define MAXLINE 100
+int str_echo(int new_fd)
+{	
+printf("Client Accepted");
+char str[1000],buffer[1000];
+	int val=0;
+	
+		
+		recv( new_fd , str,100,0);
+		FILE *fp;
+		fp=fopen(str,"r+");
+		printf("\nRequested File is %s",str);
+		if(fp==NULL)
+			send(new_fd , "File Does not Exist!" , 100 , 0 );
+		else
+			{
+				    //fseek(fp, 0, 2);    /* file pointer at the end of file */
+					 fseek(fp, 0, 5); 
+
+    					int size = ftell(fp);
+					rewind(fp);
+				fread(buffer,size,1,fp);
+				
+				send(new_fd , buffer , sizeof(buffer) , 0 );
+				fclose(fp);
+
+			}
+               
+		
+		
+		
+    		
+	
+	
+
+
+
+}
+
+main()
+{
+int sockfd , new_fd ; /* listen on sock_fd ,new connection on new_fd */
+struct sockaddr_in my_addr; /* my address */
+struct sockaddr_in their_addr; 
+int clilen;
+int childpid;
+if ((sockfd = socket (AF_INET, SOCK_STREAM ,0))==-1)
+{
+perror("soket");
+exit(1);
+}
+my_addr.sin_family= AF_INET;
+my_addr.sin_port= htons(MYPORT);
+my_addr.sin_addr.s_addr= htonl(INADDR_ANY);
+bzero(&(my_addr.sin_zero),8);
+
+if (bind(sockfd, (struct sockaddr *)&my_addr,sizeof(struct sockaddr)) == -1){
+perror("bind");
+exit(1);
+}
+printf("Listening for clients");
+if(listen(sockfd,BACKLOG) == -1) {
+perror("listen");
+exit(1);
+}
+
+
+for( ; ; )
+{
+clilen =  sizeof(their_addr);
+if ((new_fd =accept(sockfd, (struct sockaddr*)&their_addr,&clilen)) == -1)
+{
+perror("accept");
+continue;
+}
+	if ( ( childpid = fork() ) == 0)
+	{
+		
+		
+		close(sockfd);
+		str_echo(new_fd);
+                exit(0);
+	}
+	close(new_fd);	
+   }
+}
+  
+
+
